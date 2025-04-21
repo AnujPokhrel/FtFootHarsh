@@ -1,0 +1,19 @@
+name: ftft10 
+channels:
+  - conda-forge
+  - open3d-admin
+  - defaults
+dependencies:
+  - python=3.10
+  - numpy=1.24.2
+  - ninja=1.11.1
+  - scikit-learn=1.1.1
+  - pip
+  - pip:
+    - easydict==1.9
+    - flow-vis==0.1
+    - natsort==8.2.0
+    - open3d==0.16.0
+    - opencv-python==4.6.0.66
+    - tensorboardX==2.5.1
+    - torch-encoding==1.2.1
