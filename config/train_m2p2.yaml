@@ -1,7 +1,7 @@
 data_config:
-  name: THERMAL
-  data_root: /path/to/your/thermal_dataset
-  raw_img_size: [1080, 1280]
+  name: M2P2 
+  data_root: /home/vader/RobotiXX/FtFootHarsh/ORFD-custom
+  raw_cam_img_size: [1080, 1280]
   ratio: 2
   load_interval: 1
   num_train_samples: -1

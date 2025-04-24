@@ -2,7 +2,7 @@ import math
 import numpy as np
 import os
 import yaml
-
+import pdb
 from PIL import Image
 from scipy.spatial.transform import Rotation
 
@@ -114,6 +114,14 @@ def rgb_read(filename):
     img_file = Image.open(filename)
     rgb_png = np.array(img_file, dtype='uint8')  # in the range [0,255]
     return rgb_png[:, :, :3]
+
+def thermal_read(filename):
+    assert os.path.exists(filename), "file not found: {}".format(filename)
+    img_file = Image.open(filename)
+    rgb_png = np.array(img_file, dtype='uint8')  # in the range [0,255]
+    # print(rgb_png.shape)
+    # pdb.set_trace()
+    return rgb_png
 
 def depth_read(filename):
     assert os.path.exists(filename), "file not found: {}".format(filename)
