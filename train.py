@@ -74,7 +74,8 @@ def main():
 
 def train(model, loader, criterions, optimizer, summary, epoch, loss_config):
 
-    lss1, lss2, lss3, lss4 = AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter()
+    # lss1, lss2, lss3, lss4 = AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter()
+    lss1, lss3, lss4 = AverageMeter(), AverageMeter(), AverageMeter()
     description = '[i] Train {:>2}'.format(epoch)
     for batch_idx, (rgbd, gts, fname) in enumerate(tqdm(loader, desc=description, unit="batches")):
 
@@ -102,22 +103,23 @@ def train(model, loader, criterions, optimizer, summary, epoch, loss_config):
 
         loss_sn = criterions["sn"](preds["sn"], gts["sn"].cuda()) 
         loss_ce = criterions["ce"](pred_up, gts["fp"].squeeze(1).cuda().long())
-        loss_se = criterions["se"](pred_up, gts["sp"].cuda().long())
+        # loss_se = criterions["se"](pred_up, gts["sp"].cuda().long())
 
-        loss = loss_ss * loss_config.lamb_ss + loss_se * loss_config.lamb_se + loss_ce * loss_config.lamb_ce + loss_sn * loss_config.lamb_sn
+        # loss = loss_ss * loss_config.lamb_ss + loss_se * loss_config.lamb_se + loss_ce * loss_config.lamb_ce + loss_sn * loss_config.lamb_sn
+        loss = loss_ss * loss_config.lamb_ss + loss_ce * loss_config.lamb_ce + loss_sn * loss_config.lamb_sn
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
         lss1.update(loss_ss.item() * loss_config.lamb_ss)
-        lss2.update(loss_se.item() * loss_config.lamb_se)
+        # lss2.update(loss_se.item() * loss_config.lamb_se)
         lss3.update(loss_ce.item() * loss_config.lamb_ce)
         lss4.update(loss_sn.item() * loss_config.lamb_sn)
 
     metric_dict = {
         "ss": lss1.avg,
-        "se": lss2.avg,
+        # "se": lss2.avg,
         "ce": lss3.avg,
         "sn": lss4.avg,
         "total": lss1.avg + lss2.avg + lss3.avg + lss4.avg
@@ -131,7 +133,7 @@ def train(model, loader, criterions, optimizer, summary, epoch, loss_config):
 
 def valid(model, loader, criterions, summary, epoch, loss_config):
         
-    lss1, lss2, lss3, lss4 = AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter()
+    lss1, lss3, lss4 = AverageMeter(), AverageMeter(), AverageMeter()
     model.eval()
     description = '[i] Valid {:>2}'.format(epoch)
     with torch.no_grad(): 
@@ -158,19 +160,19 @@ def valid(model, loader, criterions, summary, epoch, loss_config):
 
             loss_sn = criterions["sn"](preds["sn"], gts["sn"].cuda()) 
             loss_ce = criterions["ce"](pred_up, gts["fp"].squeeze(1).cuda().long())
-            loss_se = criterions["se"](pred_up, gts["sp"].cuda().long())
+            # loss_se = criterions["se"](pred_up, gts["sp"].cuda().long())
 
             lss1.update(loss_ss.item() * loss_config.lamb_ss)
-            lss2.update(loss_se.item() * loss_config.lamb_se)
+            # lss2.update(loss_se.item() * loss_config.lamb_se)
             lss3.update(loss_ce.item() * loss_config.lamb_ce)
             lss4.update(loss_sn.item() * loss_config.lamb_sn)
 
     metric_dict = {
         "ss": lss1.avg,
-        "se": lss2.avg,
+        # "se": lss2.avg,
         "ce": lss3.avg,
         "sn": lss4.avg,
-        "total": lss1.avg + lss2.avg + lss3.avg + lss4.avg
+        "total": lss1.avg + lss3.avg + lss4.avg
     }
     update_summary(summary, rgbd, gts, preds, metric_dict, rgbd_ss, preds_ss, epoch, "valid")
     for k in metric_dict.keys():
@@ -184,7 +186,7 @@ def valid_orfd(model, loader, criterions, summary, epoch, loss_config):
     num_labels = 2    
     conf_mat = np.zeros((num_labels, num_labels), dtype=np.float16)    
         
-    lss1, lss2, lss3, lss4 = AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter()
+    lss1, lss3, lss4 = AverageMeter(), AverageMeter(), AverageMeter()
     model.eval()
     description = '[i] Valid {:>2}'.format(epoch)
     with torch.no_grad(): 
@@ -211,10 +213,10 @@ def valid_orfd(model, loader, criterions, summary, epoch, loss_config):
 
             loss_sn = criterions["sn"](preds["sn"], gts["sn"].cuda()) 
             loss_ce = criterions["ce"](pred_up, gts["fp"].squeeze(1).cuda().long())
-            loss_se = criterions["se"](pred_up, gts["sp"].cuda().long())
+            # loss_se = criterions["se"](pred_up, gts["sp"].cuda().long())
 
             lss1.update(loss_ss.item() * loss_config.lamb_ss)
-            lss2.update(loss_se.item() * loss_config.lamb_se)
+            # lss2.update(loss_se.item() * loss_config.lamb_se)
             lss3.update(loss_ce.item() * loss_config.lamb_ce)
             lss4.update(loss_sn.item() * loss_config.lamb_sn)
             
@@ -232,7 +234,7 @@ def valid_orfd(model, loader, criterions, summary, epoch, loss_config):
     
     metric_dict = {
         "ss": lss1.avg,
-        "se": lss2.avg,
+        # "se": lss2.avg,
         "ce": lss3.avg,
         "sn": lss4.avg,
         
