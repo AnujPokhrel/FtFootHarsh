@@ -15,33 +15,74 @@ class M2P2(data.Dataset):
         self.cfg = cfg
         self.mode           = mode                        # "train"/"valid"/"test"
         self.data_root      = cfg.data_root               # root of your dataset
-        self.raw_cam_img_size   = tuple(cfg.raw_cam_img_size)     # e.g. [480, 640]
+        self.raw_cam_img_size = tuple(cfg.raw_cam_img_size)     # e.g. [480, 640]
         self.ratio          = cfg.ratio                   # any down‑sampling factor
         self.load_interval  = cfg.get("load_interval", 1)
         self.num_samples    = getattr(cfg, f"num_{mode}_samples", -1)
 
-        # build a list of samples
-        img_dir = os.path.join(self.data_root, mode, "thermal")
-        depth_dir = os.path.join(self.data_root, mode, "depth")
-        sn_dir  = os.path.join(self.data_root, mode, "surface_normal")
-        fp_dir  = os.path.join(self.data_root, mode, "footprint")
+        # Define base directories for each modality 
+        self.img_dir = os.path.join(self.data_root, mode, "thermal")
+        self.depth_dir = os.path.join(self.data_root, mode, "depth")
+        self.sn_dir  = os.path.join(self.data_root, mode, "surface_normal")
+        self.fp_dir  = os.path.join(self.data_root, mode, "footprint")
         # pdb.set_trace() 
-        files    = natsort.natsorted(os.listdir(img_dir))
+        # files    = natsort.natsorted(os.listdir(self.img_dir))
         samples  = []
-        for fn in files[::self.load_interval]:
-            base = os.path.splitext(fn)[0]
-            entry = {
-                "therm":      os.path.join(img_dir, fn),
-                "depth":      os.path.join(depth_dir, base + ".png"),
-                "sn":         os.path.join(sn_dir,  base + ".npy"),
-                "footprint":  os.path.join(fp_dir,  base + ".png"),
-                "fname":      base
-            }
-            samples.append(entry)
+        depth_chunks = [d for d in os.listdir(self.depth_dir) if os.path.isdir(os.path.join(self.depth_dir, d))]
+        depth_chunks = natsort.natsorted(depth_chunks)
 
-        if self.num_samples>0: samples = samples[:self.num_samples]
-        if mode=="train":  random.shuffle(samples)
+        # for fn in files[::self.load_interval]:
+        #     base = os.path.splitext(fn)[0]
+        #     entry = {
+        #         "therm":      os.path.join(img_dir, fn),
+        #         "depth":      os.path.join(depth_dir, base + ".png"),
+        #         "sn":         os.path.join(sn_dir,  base + ".npy"),
+        #         "footprint":  os.path.join(fp_dir,  base + ".png"),
+        #         "fname":      base
+        #     }
+        #     samples.append(entry)
+
+        for chunk in depth_chunks:
+            # extract chunk identifier
+            chunk_id = chunk.split("_")[-2] + "_" + chunk.split("_")[-1]
+            timestamp = "_".join(chunk.split("_")[1:-2])
+
+            depth_chunk_path = os.path.join(self.depth_dir, chunk)
+            depth_files = natsort.natsorted([f for f in os.listdir(depth_chunk_path) if f.endswith(".png")])
+
+            thermal_chunk_path = os.path.join(self.thermal_dir, f"thermal_{timestamp}_{chunk_id}_processed")
+            sn_chunk_path = os.path.join(self.sn_dir, f"BL_{timestamp}_{chunk_id}")
+            fp_chunk_path = os.path.join(self.fp_dir, f"BL_{timestamp}_{chunk_id}_footprint_mask")
+
+            for i, depth_file in enumerate(depth_files[::self.load_interval]):
+                # Extract file index (e.g., "0" from "0.png")
+                file_idx = os.path.splitext(depth_file)[0]
+
+                # Construct corresponding file paths
+                depth_path = os.path.join(depth_chunk_path, f"{file_idx}.png")
+                thermal_path = os.path.join(thermal_chunk_path, f"{file_idx}.png")  # Adjust if thermal naming differs
+                sn_path = os.path.join(sn_chunk_path, f"{file_idx}_sparse.npy")
+                fp_path = os.path.join(fp_chunk_path, f"{file_idx:06d}.png")  # Footprint uses 6-digit padding
+
+                # Check if all files exist
+                if (os.path.exists(depth_path) and os.path.exists(thermal_path) and 
+                    os.path.exists(sn_path) and os.path.exists(fp_path)):
+                    entry = {
+                        "therm": thermal_path,
+                        "depth": depth_path,
+                        "sn": sn_path,
+                        "footprint": fp_path,
+                        "fname": f"{timestamp}_{chunk_id}_{file_idx}"
+                    }
+                    samples.append(entry)
+
+
+        if self.num_samples>0: 
+            samples = samples[:self.num_samples]
+        if mode=="train":  
+            random.shuffle(samples)
         self.samples = samples
+        print(f"############Here is the Samples list: {self.samples}")
 
     def __len__(self):
         return len(self.samples)

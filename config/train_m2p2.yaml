@@ -6,13 +6,13 @@ data_config:
   load_interval: 1
   num_train_samples: -1
   num_val_samples: -1
-  num_test_samples: -1
+  num_test_samples: 10
 
 manual_seed: 0
 batch_size: 1
 num_workers: 4
 
-ckpt_root: ../ckpts
+ckpt_root: /ckpts
 resume_path: False
 
 model: GFL4
