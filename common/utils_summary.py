@@ -16,15 +16,16 @@ def summary_image_draw(rgbd, gts, preds, cmap=plt.cm.plasma):
 
     sn_np = gts["sn"].cpu().detach().numpy()[0][:3, :, :]
     sn_np = (np.transpose(sn_np, (1, 2, 0)) + 1) * 127
+    sn_np = np.repeat(sn_np, 3, axis=2)
     sn_np = sn_np.astype('uint8') 
 
-    sp_np = gts["sp"].cpu().detach().numpy()[0][0, :, :]
-    sp_np = minmax_color_img_from_img_numpy(sp_np, cmap)
+    # sp_np = gts["sp"].cpu().detach().numpy()[0][0, :, :]
+    # sp_np = minmax_color_img_from_img_numpy(sp_np, cmap)
 
     trav_np = gts["fp"].cpu().detach().numpy()[0][0, :, :]
     trav_np = minmax_color_img_from_img_numpy(trav_np, cmap)
     
-    gt_img = np.concatenate([sn_np, sp_np, trav_np], 1)        
+    gt_img = np.concatenate([sn_np, trav_np], 1)   
 
     pred_sn_np = preds["sn"].cpu().detach().numpy()[0][:3, :, :]
     pred_sn_np = (np.transpose(pred_sn_np, (1, 2, 0)) + 1) * 127
@@ -35,9 +36,9 @@ def summary_image_draw(rgbd, gts, preds, cmap=plt.cm.plasma):
     # pred_trav_np = np.argmax(pred_trav_np, axis=1)[0]
     pred_trav_np = minmax_color_img_from_img_numpy(pred_trav_np, cmap)
     pred_trav_np = np.array(Image.fromarray(pred_trav_np).resize((pred_sn_np.shape[1], pred_sn_np.shape[0])))   
-    
-    pred_img = np.concatenate([pred_sn_np, pred_trav_np], 1)
 
+    pred_img = np.concatenate([pred_sn_np, pred_trav_np], 1)
+    
     summary_img = {}
     summary_img["0_input"] = input_img   
     summary_img["1_gt"] = gt_img

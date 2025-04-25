@@ -18,9 +18,11 @@ from common.utils_init import *
 
 import numpy as np
 from eval_orfd import confusion_matrix_orfd, getScores
+# import multiprocessing
 
 def main():
-    
+
+    # multiprocessing.set_start_method('spawn', force=True) 
     with open(os.path.join(sys.argv[1]), 'r') as file:
         config_data = yaml.load(file, Loader=yaml.FullLoader)
     config = edict(config_data)
@@ -33,6 +35,8 @@ def main():
 
     torch.cuda.empty_cache()
     model.cuda()
+    model_device = next(model.parameters()).device
+    print(f"[i] model is on: {model_device}")
     if config.resume_path :
         resume_path = os.path.join(config.ckpt_root, config.resume_path)
         model, epoch, best_metric = resume_state(resume_path, model)
@@ -78,7 +82,12 @@ def train(model, loader, criterions, optimizer, summary, epoch, loss_config):
     lss1, lss3, lss4 = AverageMeter(), AverageMeter(), AverageMeter()
     description = '[i] Train {:>2}'.format(epoch)
     for batch_idx, (rgbd, gts, fname) in enumerate(tqdm(loader, desc=description, unit="batches")):
-
+        # if batch_idx == 0:
+        #     print(f"[i] Epoch {epoch}, Batch {batch_idx}:")
+        #     print(f"  rgbd device: {rgbd.device}")
+        #     print(f"  gts['sn'] device: {gts['sn'].device}")
+        #     print(f"  gts['fp'] device: {gts['fp'].device}")
+        #     print(f"  Model device: {next(model.parameters()).device}")
         input_size = rgbd.size()[2:4]
 
         model.train()
@@ -86,7 +95,6 @@ def train(model, loader, criterions, optimizer, summary, epoch, loss_config):
 
         random_type = random.randint(1, 2)
         crop_type = random.random()
-
         rgbd_ss = rgbd_random_aug(rgbd, random_type, crop_type)
         
         preds = model(rgbd, batch_idx == 0 and epoch == 1)
@@ -98,7 +106,6 @@ def train(model, loader, criterions, optimizer, summary, epoch, loss_config):
         feature, feature_ss = feat_random_aug(feat, feat_ss, random_type, crop_type)
 
         loss_ss = criterions["ss"](feature, feature_ss, None, 0)
-            
         pred_up = F.interpolate(preds["trav"], size=input_size, mode='bilinear', align_corners=True)           
 
         loss_sn = criterions["sn"](preds["sn"], gts["sn"].cuda()) 
@@ -122,7 +129,7 @@ def train(model, loader, criterions, optimizer, summary, epoch, loss_config):
         # "se": lss2.avg,
         "ce": lss3.avg,
         "sn": lss4.avg,
-        "total": lss1.avg + lss2.avg + lss3.avg + lss4.avg
+        "total": lss1.avg + lss3.avg + lss3.avg + lss4.avg
     }
     update_summary(summary, rgbd, gts, preds, metric_dict, rgbd_ss, preds_ss, epoch, "train")
     # print('[i] epoch {}'.format(epoch), end = ' ')

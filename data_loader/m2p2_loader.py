@@ -51,9 +51,9 @@ class M2P2(data.Dataset):
 
         therm = thermal_read(S["therm"])
         therm_3ch = np.repeat(therm[:, :, np.newaxis], 3, axis=2)  # Shape: (H, W, 3)
-        print(therm_3ch.shape)
+        # print(therm_3ch.shape)
         therm_3ch = crop_image(therm_3ch, self.raw_cam_img_size)
-        therm_3ch = resize_rgb_image(therm, 
+        therm_3ch = resize_rgb_image(therm_3ch, 
                                 (self.raw_cam_img_size[0]//self.ratio,
                                 self.raw_cam_img_size[1]//self.ratio))
 
@@ -65,20 +65,19 @@ class M2P2(data.Dataset):
                                 (self.raw_cam_img_size[0]//self.ratio,
                                 self.raw_cam_img_size[1]//self.ratio))
 
-        therm_3ch = np.repeat(therm_3ch[:, :, np.newaxis], 3, axis=2)  # Shape: (H, W, 3)
-        print(f"Shape of therm_3ch: {therm_3ch.shape}")
-        print(f"Shape of depth: {depth.shape}")
+        # therm_3ch = np.repeat(therm_3ch[:, :, np.newaxis], 3, axis=2)  # Shape: (H, W, 3)
         rgbd = np.concatenate((therm_3ch, depth[:, :, np.newaxis]), axis=2)  # Shape: (H, W, 4)
         rgbd = torch.from_numpy(rgbd).permute(2, 0, 1)  # Shape: (4, H, W)
+        # rgbd_tensor = torch.from_numpy(rgbd).cuda().float()
 
         # Load surface normals (assuming 3-channel NumPy array)
         sn = np.load(S["sn"])  # Shape: (H, W, 3) or (3, H, W)
-        print(f"Shape of sn: {sn.shape}")
         sn_np = sn_image_from_npy(sn, self.raw_cam_img_size, px=3)
         sn_np = resize_sn_image(sn_np, (int(self.raw_cam_img_size[0]//self.ratio), int(self.raw_cam_img_size[1]//self.ratio)))
         sn_np = np.transpose(sn_np, (2, 0, 1))[:1, :, :]  # Shape: (3, H, W)
         sn_np[sn_np > 0] = 1 
-      
+        # sn_tensor = torch.from_numpy(sn_np).cuda().float()
+
         fp_np = thermal_read(S["footprint"])[...,0]
         fp_np = resize_rgb_image(fp_np,
                             (self.raw_cam_img_size[0]//self.ratio,
@@ -86,12 +85,16 @@ class M2P2(data.Dataset):
         fp_np_3ch = np.repeat(fp_np[:, :, np.newaxis], 3, axis=2)  # Shape: (H, W, 3)
         fp_np = np.transpose(fp_np_3ch, (2, 0, 1))[:1, :, :]
         fp_np[fp_np > 0] = 1
+        # fp_tensor = torch.from_numpy(fp_np).cuda().float()
         # Ground truths dictionary
 
         gts = {
             "sn": sn_np,  # Surface normals
             "fp": fp_np,   # Footprint mask
         }
-
+        # gts = {
+        #     "sn": sn_tensor,  # Surface normals
+        #     "fp": fp_tensor,   # Footprint mask
+        # }
         fname = S["fname"]
         return rgbd, gts, fname
